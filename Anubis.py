@@ -3,6 +3,7 @@
 #############      I've borrowed a function (serial_ports()) from a guy in stack overflow whome I can't remember his name, so I gave hime the copyrights of this function, thank you  ########
 
 
+from io import StringIO
 import sys
 import glob
 import serial
@@ -113,7 +114,7 @@ class text_widget(QWidget):
 #
 #
 class Widget(QWidget):
-
+    paramsLine = QLineEdit
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -176,6 +177,13 @@ class Widget(QWidget):
         V_splitter = QSplitter(Qt.Vertical)
         V_splitter.addWidget(H_splitter)
         V_splitter.addWidget(text2)
+
+        paramsLbl = QLabel(self)
+        paramsLbl.setText("Fast execution Parameters, separate by a semicolon ';' ")
+        V_splitter.addWidget(paramsLbl)
+        global paramsLine
+        paramsLine = QLineEdit(self)
+        V_splitter.addWidget(paramsLine)
 
         Final_Layout = QHBoxLayout(self)
         Final_Layout.addWidget(V_splitter)
@@ -300,6 +308,11 @@ class UI(QMainWindow):
         filemenu.addAction(Open_Action)
 
 
+        RunFunction = menu.addMenu('Execute Snippet')
+        RunFunctionAction = QAction("RunFunction", self)
+        RunFunctionAction.triggered.connect(self.RunFunction)
+        RunFunction.addAction(RunFunctionAction)
+
         # Seting the window Geometry
         self.setGeometry(200, 150, 600, 500)
         self.setWindowTitle('Anubis IDE')
@@ -310,6 +323,7 @@ class UI(QMainWindow):
 
         self.setCentralWidget(widget)
         self.show()
+
 
     ###########################        Start OF the Functions          ##################
     def Run(self):
@@ -350,6 +364,30 @@ class UI(QMainWindow):
                 data = f.read()
             self.Open_Signal.reading.emit(data)
 
+    def RunFunction(self):
+        code = text.toPlainText()
+        text2.clear()
+
+        if len(code) > 7 and code[0:4] == 'def ':
+            name = code[0:code.find("(")]
+            call = name + "("
+            parameters = paramsLine.text().split(';')
+
+            for i in parameters:
+                call+= i + ","
+            call = call[4:len(call) - 1]
+            call += ')'
+            print(code + "\n" + call)
+            try:
+                codeOut = StringIO()
+                sys.stdout = codeOut
+                exec(code + "\n" + call)
+                text2.append(codeOut.getvalue())
+                sys.stdout = sys.__stdout__
+                codeOut.close()
+            except:
+                text2.append("Running Threw an exception")
+     
 
 #
 #
